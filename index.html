@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>CC Shorts Finder</title>
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8530756154544319" crossorigin="anonymous"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --card: #ffffff;
+      --border: #e0e0e8;
+      --accent: #ff3b3b;
+      --accent2: #ff7043;
+      --text: #1a1a2e;
+      --muted: #7a7a96;
+      --tag: #e8e8ee;
+    }
+    body.dark {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --card: #1a1a25;
+      --border: #2a2a3a;
+      --accent: #ff3b3b;
+      --accent2: #ff7043;
+      --text: #f0f0f5;
+      --muted: #7070a0;
+      --tag: #22223a;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(245,245,247,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s;
+    }
+    body.dark header {
+      background: rgba(10,10,15,0.92);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo span { color: var(--muted); -webkit-text-fill-color: var(--muted); font-size: 13px; font-family: 'Noto Sans KR'; letter-spacing: 0; margin-left: 8px; font-weight: 300; }
+
+    .cc-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 100px;
+      letter-spacing: 1px;
+    }
+
+    /* ── AD BANNER ── */
+    .ad-top {
+      width: 100%;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 8px;
+      min-height: 90px;
+    }
+
+    /* ── SEARCH SECTION ── */
+    .search-section {
+      position: relative;
+      z-index: 1;
+      padding: 48px 24px 32px;
+      text-align: center;
+    }
+
+    .search-section h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(36px, 6vw, 72px);
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .search-section h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .search-section p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      max-width: 680px;
+      margin: 0 auto 20px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 15px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--muted); }
+
+    .search-btn {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .search-btn:hover { opacity: 0.88; }
+    .search-btn:active { transform: scale(0.97); }
+
+    /* ── FILTER CHIPS ── */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      max-width: 680px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .chip {
+      background: var(--tag);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .chip:hover, .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── SORT BAR ── */
+    .sort-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 20px;
+      flex-wrap: wrap;
+    }
+
+    .license-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .license-badge.verified {
+      background: rgba(46,221,142,0.12);
+      color: #2edd8e;
+      border: 1px solid rgba(46,221,142,0.25);
+    }
+    .license-badge.warning {
+      background: rgba(255,62,108,0.12);
+      color: #ff3b3b;
+      border: 1px solid rgba(255,62,108,0.25);
+    }
+    .sort-label { color: var(--muted); font-size: 13px; }
+
+    .sort-select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      padding: 7px 14px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .result-count {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .result-count strong { color: var(--accent); }
+
+    /* ── GRID ── */
+    .grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 8px 32px rgba(255,59,59,0.15);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .thumb-wrap {
+      position: relative;
+      aspect-ratio: 9/16;
+      overflow: hidden;
+      background: #111;
+    }
+
+    .thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s;
+    }
+
+    .card:hover .thumb-wrap img { transform: scale(1.04); }
+
+    .duration-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 7px;
+      border-radius: 6px;
+    }
+
+    .cc-icon {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(255,59,59,0.9);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      background: rgba(0,0,0,0.3);
+    }
+
+    .card:hover .play-overlay { opacity: 1; }
+
+    .play-icon {
+      width: 52px;
+      height: 52px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .play-icon svg { margin-left: 3px; }
+
+    .card-body {
+      padding: 14px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 8px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .card-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-watch {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 9px;
+      border-radius: 8px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: center;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-watch:hover { border-color: var(--muted); background: var(--surface); }
+
+    .btn-download {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      color: #fff;
+      padding: 9px;
+      border-radius: 8px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.18s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .btn-download:hover { opacity: 0.88; }
+    .btn-download:active { transform: scale(0.97); }
+
+    /* ── AD MID ── */
+    .ad-mid {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* ── SKELETON ── */
+    .skeleton {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      animation: pulse 1.4s ease infinite;
+    }
+
+    .skeleton-thumb {
+      aspect-ratio: 9/16;
+      background: var(--border);
+    }
+
+    .skeleton-body { padding: 14px; }
+
+    .skeleton-line {
+      height: 12px;
+      background: var(--border);
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-line.short { width: 60%; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ── EMPTY / ERROR ── */
+    .state-msg {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 80px 24px;
+      color: var(--muted);
+    }
+
+    .load-more-wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      padding: 0 24px 40px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .load-more-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 14px 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .load-more-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .load-more-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .state-msg .icon { font-size: 48px; margin-bottom: 16px; }
+    .state-msg h3 { font-size: 18px; color: var(--text); margin-bottom: 8px; }
+    .state-msg p { font-size: 14px; }
+
+    /* ── API KEY MODAL ── */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .modal h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+
+    .modal p { color: var(--muted); font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+
+    .modal input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      outline: none;
+      margin-bottom: 14px;
+    }
+
+    .modal input:focus { border-color: var(--accent); }
+
+    .modal-actions { display: flex; gap: 10px; }
+
+    .modal .btn-download { flex: 1; padding: 12px; font-size: 14px; }
+    .modal .btn-skip {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .modal .btn-skip:hover { border-color: var(--muted); color: var(--text); }
+
+    .modal-tip {
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(255,112,67,0.08);
+      border: 1px solid rgba(255,112,67,0.2);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--accent2);
+      line-height: 1.6;
+    }
+
+    .modal-tip a { color: var(--accent2); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    /* ── DOWNLOAD TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 13px;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+      max-width: 320px;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-icon { font-size: 20px; }
+
+    @media (max-width: 600px) {
+      .search-row { flex-direction: column; }
+      .card-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- API KEY MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="modalTitle">🔑 API Key Setup</h2>
+    <p id="modalDesc">Enter your YouTube Data API v3 key to search CC shorts in real time.<br>You can also try demo data without a key.</p>
+    <input type="password" id="apiKeyInput" placeholder="AIzaSy..." value="AIzaSyC1jd4K85UG-XgLMh0KSJ1LspmzU_rvhA4" />
+    <div class="modal-actions">
+      <button class="btn-download" id="modalSaveBtn" onclick="saveApiKey()">Save & Start</button>
+      <button class="btn-skip" id="modalSkipBtn" onclick="skipApiKey()">Try Demo</button>
+    </div>
+    <div class="modal-tip" id="modalTip">
+      💡 <strong>Get API Key</strong>: <a href="https://console.developers.google.com/" target="_blank">Google Cloud Console</a> → Create Project → Enable YouTube Data API v3 → Credentials → Create API Key (Free, 10,000 quota/day)
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">CC SHORTS <span id="headerSub">Creative Commons Shorts Curator</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="langBtn" onclick="toggleLang()" style="background:var(--tag);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.18s;">🇰🇷 KR</button>
+    <button id="themeBtn" onclick="toggleTheme()" style="background:var(--tag);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:8px;font-size:16px;cursor:pointer;transition:all 0.18s;">🌙</button>
+    <div class="cc-badge">CC BY</div>
+  </div>
+</header>
+
+<!-- TOP AD -->
+<div class="ad-top">
+  <ins class="adsbygoogle"
+    style="display:block;width:728px;height:90px;max-width:100%"
+    data-ad-client="ca-pub-8530756154544319"
+    data-ad-slot="auto"
+    data-ad-format="horizontal"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<!-- SEARCH -->
+<section class="search-section">
+  <h1 id="searchTitle">Find Free<br><em>CC Shorts</em></h1>
+  <p id="searchDesc">Search Creative Commons licensed shorts and download with one click</p>
+  <div class="search-row">
+    <input class="search-input" id="searchInput" type="text" placeholder="Search keyword (e.g. travel, cooking, nature...)" />
+    <button class="search-btn" id="searchBtn" onclick="doSearch()">🔍 Search</button>
+  </div>
+  <div class="filter-row">
+    <div class="chip active" data-i18n-sort="popular" onclick="setSort(this,'viewCount')">🔥 Popular</div>
+    <div class="chip" data-i18n-sort="latest" onclick="setSort(this,'date')">🆕 Latest</div>
+    <div class="chip" data-i18n-sort="relevant" onclick="setSort(this,'relevance')">✨ Relevant</div>
+    <div class="chip" data-i18n-filter="travel" onclick="setFilter(this,'travel')">✈️ Travel</div>
+    <div class="chip" data-i18n-filter="food" onclick="setFilter(this,'food')">🍜 Food</div>
+    <div class="chip" data-i18n-filter="nature" onclick="setFilter(this,'nature')">🌿 Nature</div>
+    <div class="chip" data-i18n-filter="animal" onclick="setFilter(this,'animal')">🐾 Animals</div>
+    <div class="chip" data-i18n-filter="music" onclick="setFilter(this,'music')">🎵 Music</div>
+  </div>
+</section>
+
+<!-- SORT BAR -->
+<div class="sort-bar">
+  <span class="sort-label" id="sortLabel">Sort:</span>
+  <select class="sort-select" id="sortSelect" onchange="doSearch()">
+    <option value="viewCount">Most Viewed</option>
+    <option value="date">Newest</option>
+    <option value="relevance">Relevance</option>
+    <option value="rating">Rating</option>
+  </select>
+  <div class="result-count" id="resultCount"></div>
+</div>
+
+<!-- GRID -->
+<div class="grid" id="grid"></div>
+
+<!-- LOAD MORE -->
+<div class="load-more-wrap" id="loadMoreWrap" style="display:none">
+  <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Load More</button>
+</div>
+
+<!-- MID AD -->
+<div class="ad-mid">
+  <ins class="adsbygoogle"
+    style="display:block;width:336px;height:280px;max-width:100%"
+    data-ad-client="ca-pub-8530756154544319"
+    data-ad-slot="auto"
+    data-ad-format="rectangle"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p id="footerText1">CC Shorts Finder — Only Creative Commons (CC BY) licensed videos are displayed.</p>
+  <p id="footerText2">Always check the original video's license terms before downloading.</p>
+  <p style="margin-top:8px;font-size:11px;" id="footerText3">Powered by YouTube Data API v3 &nbsp;·&nbsp; Download: Piped API</p>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon">⬇️</span>
+  <span id="toastMsg">Download started!</span>
+</div>
+
+<script>
+  // ── TRANSLATIONS ──
+  const L = {
+    en: {
+      headerSub: 'Creative Commons Shorts Curator',
+      searchTitle: 'Find Free<br><em>CC Shorts</em>',
+      searchDesc: 'Search Creative Commons licensed shorts and download with one click',
+      searchPH: 'Search keyword (e.g. travel, cooking, nature...)',
+      searchBtn: '\uD83D\uDD0D Search',
+      sortLabel: 'Sort:',
+      sortVC: 'Most Viewed', sortDate: 'Newest', sortRel: 'Relevance', sortRate: 'Rating',
+      chipPopular: '\uD83D\uDD25 Popular', chipLatest: '\uD83C\uDD95 Latest', chipRelevant: '\u2728 Relevant',
+      chipTravel: '\u2708\uFE0F Travel', chipFood: '\uD83C\uDF5C Food', chipNature: '\uD83C\uDF3F Nature',
+      chipAnimal: '\uD83D\uDC3E Animals', chipMusic: '\uD83C\uDFB5 Music',
+      modalTitle: '\uD83D\uDD11 API Key Setup',
+      modalDesc: 'Enter your YouTube Data API v3 key to search CC shorts in real time.<br>You can also try demo data without a key.',
+      modalSave: 'Save & Start', modalSkip: 'Try Demo',
+      modalTip: '\uD83D\uDCA1 <strong>Get API Key</strong>: <a href="https://console.developers.google.com/" target="_blank">Google Cloud Console</a> \u2192 Create Project \u2192 Enable YouTube Data API v3 \u2192 Credentials \u2192 Create API Key (Free, 10,000 quota/day)',
+      alertNoKey: 'Please enter your API key.',
+      resultCount: 'Total <strong>{n}</strong> CC Shorts',
+      emptyTitle: 'No results found', emptyDesc: 'Try a different keyword.',
+      errorTitle: 'An error occurred',
+      errorHint: 'Check your API key or try <button onclick="skipApiKey()" style="background:none;border:none;color:#ff7043;cursor:pointer;font-size:12px;">Demo Mode</button>.',
+      watch: '\u25B6 Watch', download: '\u2B07 Download',
+      loading: '\u23F3 Checking...',
+      toastOk: 'Download started!',
+      toastFail: 'Cannot reach download server. Please try again later.',
+      demoCount: '<strong>{n}</strong> (demo data)',
+      licenseOk: ' CC BY Verified',
+      licenseWarn: ' Standard License',
+      footer1: 'CC Shorts Finder \u2014 Only Creative Commons (CC BY) licensed videos are displayed.',
+      footer2: 'Always check the original video\'s license terms before downloading.',
+      footer3: 'Powered by YouTube Data API v3 \u00B7 Download: Piped / Invidious / Proxy',
+      loadMore: 'Load More',
+      loadingMore: 'Loading...',
+      noMore: 'No more results',
+      langBtn: '\uD83C\uDDF0\uD83C\uDDF7 KR',
+      themeBtnDark: '\uD83C\uDF19', themeBtnLight: '\u2600\uFE0F',
+    },
+    ko: {
+      headerSub: '\uD06C\uB9AC\uC5D0\uC774\uD2F0\uBE0C \uCEE4\uBA3C\uC988 \uC1FC\uCE20 \uD050\uB808\uC774\uD130',
+      searchTitle: '\uBB34\uB8CC\uB85C \uC4F8 \uC218 \uC788\uB294<br><em>CC \uC1FC\uCE20</em> \uCC3E\uAE30',
+      searchDesc: '\uD06C\uB9AC\uC5D0\uC774\uD2F0\uBE0C \uCEE4\uBA3C\uC988 \uB77C\uC774\uC120\uC2A4 \uC1FC\uCE20\uC744 \uAC80\uC0C9\uD558\uACE0 \uC6D0\uD074\uB9AD\uC73C\uB85C \uB2E4\uC6B4\uB85C\uB4DC\uD558\uC138\uC694',
+      searchPH: '\uD0A4\uC6CC\uB4DC \uC785\uB825 (\uC608: \uC5EC\uD589, \uC694\uB9AC, \uC790\uC5F0...)',
+      searchBtn: '\uD83D\uDD0D \uAC80\uC0C9',
+      sortLabel: '\uC815\uB82C:',
+      sortVC: '\uC870\uD68C\uC218 \uB192\uC740\uC21C', sortDate: '\uCD5C\uC2E0\uC21C', sortRel: '\uAD00\uB828\uB3C4\uC21C', sortRate: '\uD3C9\uC810\uC21C',
+      chipPopular: '\uD83D\uDD25 \uC778\uAE30\uC21C', chipLatest: '\uD83C\uDD95 \uCD5C\uC2E0\uC21C', chipRelevant: '\u2728 \uAD00\uB828\uC21C',
+      chipTravel: '\u2708\uFE0F \uC5EC\uD589', chipFood: '\uD83C\uDF5C \uC74C\uC2DD', chipNature: '\uD83C\uDF3F \uC790\uC5F0',
+      chipAnimal: '\uD83D\uDC3E \uB3D9\uBB3C', chipMusic: '\uD83C\uDFB5 \uC74C\uC545',
+      modalTitle: '\uD83D\uDD11 API \uD0A4 \uC124\uC815',
+      modalDesc: 'YouTube Data API v3 \uD0A4\uB97C \uC785\uB825\uD558\uBA74 \uC2E4\uC2DC\uAC04\uC73C\uB85C CC \uC1FC\uCE20\uC744 \uAC80\uC0C9\uD560 \uC218 \uC788\uC5B4\uC694.<br>\uD0A4 \uC5C6\uC774\uB3C4 \uB370\uBAA8 \uB370\uC774\uD130\uB85C \uCCB4\uD5D8 \uAC00\uB2A5\uD569\uB2C8\uB2E4.',
+      modalSave: '\uC800\uC7A5\uD558\uACE0 \uC2DC\uC791', modalSkip: '\uB370\uBAA8\uB85C \uCCB4\uD5D8',
+      modalTip: '\uD83D\uDCA1 <strong>API \uD0A4 \uBC1C\uAE09</strong>: <a href="https://console.developers.google.com/" target="_blank">Google Cloud Console</a> \u2192 \uD504\uB85C\uC81D\uD2B8 \uC0DD\uC131 \u2192 YouTube Data API v3 \uC0AC\uC6A9 \uC124\uC815 \u2192 \uC0AC\uC6A9\uC790 \uC778\uC99D \uC815\uBCF4 \u2192 API \uD0A4 \uC0DD\uC131 (\uBB34\uB8CC, \uD558\uB8E8 10,000 \uCF70\uD130)',
+      alertNoKey: 'API \uD0A4\uB97C \uC785\uB825\uD574 \uC8FC\uC138\uC694.',
+      resultCount: '\uCD1D <strong>{n}</strong>\uAC1C\uC758 CC \uC1FC\uCE20',
+      emptyTitle: '\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uC5C6\uC5B4\uC694', emptyDesc: '\uB2E4\uB978 \uD0A4\uC6CC\uB4DC\uB85C \uAC80\uC0C9\uD574 \uBCF4\uC138\uC694.',
+      errorTitle: '\uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694',
+      errorHint: 'API \uD0A4\uB97C \uD655\uC778\uD558\uAC70\uB098 <button onclick="skipApiKey()" style="background:none;border:none;color:#ff7043;cursor:pointer;font-size:12px;">\uB370\uBAA8 \uBAA8\uB4DC</button>\uB85C \uCCB4\uD5D8\uD574 \uBCF4\uC138\uC694.',
+      watch: '\u25B6 \uC2DC\uCCAD', download: '\u2B07 \uB2E4\uC6B4\uB85C\uB4DC',
+      loading: '\u23F3 \uD655\uC778 \uC911...',
+      toastOk: '\uB2E4\uC6B4\uB85C\uB4DC\uAC00 \uC2DC\uC791\uB418\uC5C8\uC5B4\uC694!',
+      toastFail: '\uB2E4\uC6B4\uB85C\uB4DC \uC11C\uBC84\uC5D0 \uC811\uC18D\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. \uB098\uC911\uC5D0 \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.',
+      demoCount: '<strong>{n}</strong>\uAC1C (\uB370\uBAA8 \uB370\uC774\uD130)',
+      licenseOk: ' CC BY \uD655\uC778\uB428',
+      licenseWarn: ' \uD45C\uC900 \uB77C\uC774\uC120\uC2A4',
+      footer1: 'CC Shorts Finder \u2014 \uD06C\uB9AC\uC5D0\uC774\uD2F0\uBE0C \uCEE4\uBA3C\uC988(CC BY) \uB77C\uC774\uC120\uC2A4 \uC601\uC0C1\uB9CC \uD45C\uC2DC\uB429\uB2C8\uB2E4.',
+      footer2: '\uB2E4\uC6B4\uB85C\uB4DC \uC804 \uC6D0\uBCF8 \uC601\uC0C1\uC758 \uB77C\uC774\uC120\uC2A4 \uC870\uAC74\uC744 \uBC18\uB4DC\uC2DC \uD655\uC778\uD558\uC138\uC694.',
+      footer3: 'Powered by YouTube Data API v3 \u00B7 \uB2E4\uC6B4\uB85C\uB4DC: Piped / Invidious / Proxy',
+      loadMore: '\uB354 \uBCF4\uAE30',
+      loadingMore: '\uBD88\uB7EC\uC624\uB294 \uC911...',
+      noMore: '\uAC80\uC0C9 \uACB0\uACFC\uAC00 \uB354 \uC774\uC0C1 \uC5C6\uC2B5\uB2C8\uB2E4',
+      langBtn: '\uD83C\uDDFA\uD83C\uDDF8 EN',
+      themeBtnDark: '\uD83C\uDF19', themeBtnLight: '\u2600\uFE0F',
+    }
+  };
+
+  // ── STATE ──
+  let API_KEY = '';
+  let isDemoMode = false;
+  let currentSort = 'viewCount';
+  let currentFilter = '';
+  let lang = detectLang();
+  let isDark = false;
+  let nextPageToken = '';
+  let isLoadingMore = false;
+  let currentQuery = '';
+  let totalLoaded = 0;
+
+  const KEYWORDS = {
+    en: ['travel','nature','food','music','animals','technology','sports','art','dance','comedy','fitness','fashion','gaming','science','cooking','pets','beach','sunset','mountains','ocean','space','architecture','mindfulness','photography','film'],
+    ko: ['\uC5EC\uD589','\uC790\uC5F0','\uC74C\uC2DD','\uC74C\uC545','\uB3D9\uBB3C','\uAE30\uC220','\uC608\uC220','\uCDA4','\uCF54\uBBF8\uB514','\uD53C\uD2B8\uB2C8\uC2A4','\uD328\uC158','\uAC8C\uC784','\uACFC\uD559','\uC694\uB9AC','\uBC18\uB824\uB3D9\uBB3C','\uD574\uBC00\uB300','\uC77C\uBB3D','\uC0B0','\uBC14\uB2E4','\uC6B0\uC8FC']
+  };
+
+  function getRandomKeyword() {
+    const pool = KEYWORDS[lang] || KEYWORDS.en;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function detectLang() {
+    const saved = localStorage.getItem('cc_lang');
+    if (saved) return saved;
+    const nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    return nav.startsWith('ko') ? 'ko' : 'en';
+  }
+
+  function t(key, vars = {}) {
+    let s = (L[lang] || L.en)[key] || key;
+    for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, v);
+    return s;
+  }
+
+  function applyLang() {
+    document.getElementById('langBtn').textContent = t('langBtn');
+    document.getElementById('headerSub').textContent = t('headerSub');
+    document.getElementById('searchTitle').innerHTML = t('searchTitle');
+    document.getElementById('searchDesc').textContent = t('searchDesc');
+    document.getElementById('searchInput').placeholder = t('searchPH');
+    document.getElementById('searchBtn').textContent = t('searchBtn');
+    document.getElementById('sortLabel').textContent = t('sortLabel');
+    document.getElementById('modalTitle').textContent = t('modalTitle');
+    document.getElementById('modalDesc').innerHTML = t('modalDesc');
+    document.getElementById('modalSaveBtn').textContent = t('modalSave');
+    document.getElementById('modalSkipBtn').textContent = t('modalSkip');
+    document.getElementById('modalTip').innerHTML = t('modalTip');
+    document.getElementById('footerText1').textContent = t('footer1');
+    document.getElementById('footerText2').textContent = t('footer2');
+    document.getElementById('footerText3').textContent = t('footer3');
+    const sortOpts = document.getElementById('sortSelect').options;
+    sortOpts[0].text = t('sortVC');
+    sortOpts[1].text = t('sortDate');
+    sortOpts[2].text = t('sortRel');
+    sortOpts[3].text = t('sortRate');
+    const chips = document.querySelectorAll('.filter-row .chip');
+    const sortKeys = ['popular', 'latest', 'relevant'];
+    const filterKeys = ['travel', 'food', 'nature', 'animal', 'music'];
+    chips.forEach((c, i) => {
+      const key = i < 3 ? sortKeys[i] : filterKeys[i - 3];
+      c.innerHTML = t(i < 3 ? `chip${key.charAt(0).toUpperCase() + key.slice(1)}` : `chip${key.charAt(0).toUpperCase() + key.slice(1)}`);
+    });
+    const lmBtn = document.getElementById('loadMoreBtn');
+    if (lmBtn) lmBtn.textContent = isLoadingMore ? t('loadingMore') : t('loadMore');
+    const tc = document.getElementById('themeBtn');
+    tc.textContent = isDark ? t('themeBtnLight') : t('themeBtnDark');
+    localStorage.setItem('cc_lang', lang);
+  }
+
+  function toggleLang() {
+    lang = lang === 'en' ? 'ko' : 'en';
+    applyLang();
+    if (isDemoMode) loadDemo();
+  }
+
+  function toggleTheme() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark', isDark);
+    const tc = document.getElementById('themeBtn');
+    tc.textContent = isDark ? t('themeBtnLight') : t('themeBtnDark');
+    localStorage.setItem('cc_theme', isDark ? 'dark' : 'light');
+  }
+
+  function initTheme() {
+    const saved = localStorage.getItem('cc_theme');
+    if (saved === 'dark') { isDark = true; document.body.classList.add('dark'); }
+    else if (saved === 'light') { isDark = false; }
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) { isDark = true; document.body.classList.add('dark'); }
+  }
+
+  // ── MODAL ──
+  function saveApiKey() {
+    const val = document.getElementById('apiKeyInput').value.trim();
+    if (!val) { alert(t('alertNoKey')); return; }
+    API_KEY = val;
+    localStorage.setItem('yt_api_key', val);
+    closeModal();
+    doSearch();
+  }
+
+  function skipApiKey() {
+    isDemoMode = true;
+    closeModal();
+    loadDemo();
+  }
+
+  function closeModal() {
+    document.getElementById('modalBg').style.display = 'none';
+  }
+
+  // ── INIT ──
+  window.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    applyLang();
+    const saved = localStorage.getItem('yt_api_key');
+    if (saved) {
+      API_KEY = saved;
+      closeModal();
+      doSearch();
+    }
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doSearch();
+    });
+  });
+
+  // ── SORT / FILTER CHIPS ──
+  function setSort(el, val) {
+    const sortTexts = [t('chipPopular'), t('chipLatest'), t('chipRelevant')];
+    document.querySelectorAll('.chip').forEach(c => {
+      if (sortTexts.some(txt => c.textContent.includes(txt.replace(/^[^\s]+\s/, '')))) {
+        c.classList.remove('active');
+      }
+    });
+    el.classList.add('active');
+    document.getElementById('sortSelect').value = val;
+    currentSort = val;
+    doSearch();
+  }
+
+  function setFilter(el, val) {
+    const filterTexts = [t('chipTravel'), t('chipFood'), t('chipNature'), t('chipAnimal'), t('chipMusic')];
+    document.querySelectorAll('.chip').forEach(c => {
+      if (filterTexts.some(txt => c.textContent.includes(txt.replace(/^[^\s]+\s/, '')))) c.classList.remove('active');
+    });
+    if (currentFilter === val) {
+      currentFilter = '';
+    } else {
+      el.classList.add('active');
+      currentFilter = val;
+      document.getElementById('searchInput').value = val;
+    }
+    doSearch();
+  }
+
+  // ── SEARCH ──
+  async function doSearch() {
+    if (isDemoMode) { loadDemo(); return; }
+    if (!API_KEY) return;
+
+    const manualInput = document.getElementById('searchInput').value.trim();
+    const q = manualInput || currentFilter || getRandomKeyword();
+    currentQuery = q;
+    nextPageToken = '';
+    totalLoaded = 0;
+    document.getElementById('loadMoreWrap').style.display = 'none';
+
+    if (!manualInput && !currentFilter) {
+      const order = 'date';
+      document.getElementById('sortSelect').value = order;
+      currentSort = order;
+      document.querySelectorAll('.filter-row .chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.filter-row .chip')[1]?.classList.add('active');
+    }
+
+    const order = document.getElementById('sortSelect').value || currentSort;
+
+    showSkeleton();
+
+    try {
+      const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
+      searchUrl.searchParams.set('part', 'snippet');
+      searchUrl.searchParams.set('q', q);
+      searchUrl.searchParams.set('type', 'video');
+      searchUrl.searchParams.set('videoDuration', 'short');
+      searchUrl.searchParams.set('videoLicense', 'creativeCommon');
+      searchUrl.searchParams.set('order', order);
+      searchUrl.searchParams.set('maxResults', '20');
+      searchUrl.searchParams.set('key', API_KEY);
+
+      const searchRes = await fetch(searchUrl.toString());
+      if (!searchRes.ok) {
+        const err = await searchRes.json();
+        throw new Error(err.error?.message || 'Search error');
+      }
+      const searchData = await searchRes.json();
+      const items = searchData.items || [];
+      nextPageToken = searchData.nextPageToken || '';
+
+      const videoIds = items.map(item => item.id?.videoId).filter(Boolean);
+      let licenseMap = {};
+
+      if (videoIds.length > 0) {
+        try {
+          const videoUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+          videoUrl.searchParams.set('part', 'status');
+          videoUrl.searchParams.set('id', videoIds.join(','));
+          videoUrl.searchParams.set('key', API_KEY);
+          const videoRes = await fetch(videoUrl.toString());
+          if (videoRes.ok) {
+            const videoData = await videoRes.json();
+            (videoData.items || []).forEach(v => {
+              licenseMap[v.id] = v.status?.license || 'unknown';
+            });
+          }
+        } catch (e) {
+          console.warn('License check failed:', e.message);
+        }
+      }
+
+      renderCards(items, licenseMap);
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ── RENDER ──
+  function renderCards(items, licenseMap = {}) {
+    const grid = document.getElementById('grid');
+    document.getElementById('resultCount').innerHTML = t('resultCount', { n: items.length });
+
+    if (!items.length) {
+      grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+        <div class="icon">\uD83D\uDD0D</div>
+        <h3>${t('emptyTitle')}</h3>
+        <p>${t('emptyDesc')}</p>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map((item, i) => {
+      const vid = item.id?.videoId || item.videoId;
+      const title = item.snippet?.title || item.title;
+      const channel = item.snippet?.channelTitle || item.channel;
+      const thumb = item.snippet?.thumbnails?.high?.url || item.thumb;
+      const views = item.views || '';
+      const date = item.snippet?.publishedAt
+        ? new Date(item.snippet.publishedAt).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US')
+        : item.date || '';
+
+      const license = licenseMap[vid];
+      let licenseBadge = '';
+      if (license === 'creativeCommon') {
+        licenseBadge = `<div class="license-badge verified">\u2705${t('licenseOk')}</div>`;
+      } else if (license && license !== 'unknown') {
+        licenseBadge = `<div class="license-badge warning">\u26A0\uFE0F${t('licenseWarn')}</div>`;
+      }
+
+      return `
+        <div class="card" style="animation-delay:${i * 0.04}s">
+          <a href="https://www.youtube.com/shorts/${vid}" target="_blank" style="text-decoration:none;color:inherit">
+            <div class="thumb-wrap">
+              <img src="${thumb}" alt="${title}" loading="lazy" />
+              <div class="cc-icon">CC BY</div>
+              <div class="duration-badge">Shorts</div>
+              <div class="play-overlay">
+                <div class="play-icon">
+                  <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                    <path d="M1 1L17 11L1 21V1Z" fill="#ff3b3b" stroke="#ff3b3b" stroke-width="1.5"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </a>
+          <div class="card-body">
+            <div class="card-title">${escHtml(title)}</div>
+            ${licenseBadge}
+            <div class="card-meta">
+              <span>\uD83D\uDCFA ${escHtml(channel)}</span>
+              ${views ? `<span>\uD83D\uDC41 ${views}</span>` : ''}
+              ${date ? `<span>\uD83D\uDCC5 ${date}</span>` : ''}
+            </div>
+            <div class="card-actions">
+              <a class="btn-watch" href="https://www.youtube.com/shorts/${vid}" target="_blank">
+                ${t('watch')}
+              </a>
+              <button class="btn-download" onclick="downloadVideo(this, '${vid}', '${escAttr(title)}')">
+                ${t('download')}
+              </button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    totalLoaded = items.length;
+    const wrap = document.getElementById('loadMoreWrap');
+    if (nextPageToken && items.length > 0) {
+      wrap.style.display = 'flex';
+      document.getElementById('loadMoreBtn').textContent = t('loadMore');
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  // ── DOWNLOAD via Piped / Invidious API ──
+  async function downloadVideo(btn, videoId, title) {
+    const pipedInstances = [
+      'pipedapi.kavin.rocks','api.piped.private.coffee','pipedapi-libre.kavin.rocks',
+      'pipedapi.tokhmi.xyz','pipedapi.moomoo.me','pipedapi.syncpundit.io',
+      'api-piped.mha.fi','pipedapi.rivo.lol','pipedapi.leptons.xyz',
+      'piped-api.lunar.icu','ytapi.dc09.ru','pipedapi.colinslegacy.com',
+      'yapi.vyper.me','api.looleh.xyz','piped-api.cfe.re','pipedapi.r4fo.com',
+      'pipedapi.nosebs.ru','pa.mint.lgbt','pa.il.ax','piped-api.privacy.com.de',
+      'api.piped.projectsegfau.lt','watchapi.whatever.social','api.piped.privacydev.net',
+      'pipedapi.palveluntarjoaja.eu','pipedapi.smnz.de','pipedapi.adminforge.de',
+      'pipedapi.qdi.fi','piped-api.hostux.net','pdapi.vern.cc','pipedapi.osphost.fi',
+      'pipedapi.simpleprivacy.fr','pipedapi.owo.si','api.piped.minionflo.net',
+      'pipedapi.nezumi.party','piped-api.coldforge.xyz','pipedapi.pfcd.me',
+    ];
+    const invidiousInstances = [
+      'invidious.snopyta.org','yewtu.be','invidious.nerdvpn.de','inv.nadeko.net',
+      'invidious.privacydev.net','vid.puffyan.us','invidious.private.coffee',
+      'invidious.044075.xyz','iv.melmac.space','inv.odyssey346.dev',
+      'inv.bp.projectsegfau.lt','invidious.projectsegfau.lt',
+      'inv.tux.pizza','yt.artemislena.eu','invidious.pcriot.xyz',
+    ];
+    const proxyUrls = [
+      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+      (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+      (url) => `https://codetabs.com/cors-proxy/cors-proxy.php?url=${encodeURIComponent(url)}`,
+    ];
+    const LOG_PREFIX = `[DL ${videoId}]`;
+    btn.disabled = true;
+    btn.textContent = t('loading');
+
+    function openDownload(url) {
+      window.open(url, '_blank');
+      showToast(t('toastOk'));
+      btn.disabled = false;
+      btn.textContent = t('download');
+      return true;
+    }
+
+    // ── 1. Try Piped instances ──
+    for (const host of pipedInstances) {
+      try {
+        const url = `https://${host}/streams/${videoId}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const streams = data.videoStreams || [];
+        const best = streams.find(s => !s.videoOnly) || streams[0];
+        if (best?.url) return openDownload(best.url);
+        // Some piped instances use 'url' directly (older versions)
+        if (data.url) return openDownload(data.url);
+      } catch (e) {
+        console.warn(`${LOG_PREFIX} piped ${host}:`, e.message);
+      }
+    }
+
+    // ── 2. Try Invidious instances ──
+    for (const host of invidiousInstances) {
+      try {
+        const url = `https://${host}/api/v1/videos/${videoId}`;
+        const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+        if (!res.ok) continue;
+        const data = await res.json();
+        const streams = data.formatStreams || [];
+        const best = streams.find(s => s.type && s.type.includes('mp4') && !s.encoding) || streams.find(s => s.type && s.type.includes('mp4')) || streams[0];
+        if (best?.url) return openDownload(best.url);
+      } catch (e) {
+        console.warn(`${LOG_PREFIX} invidious ${host}:`, e.message);
+      }
+    }
+
+    // ── 3. Try proxy + YouTube watch page ──
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    for (const makeProxyUrl of proxyUrls) {
+      try {
+        const resp = await fetch(makeProxyUrl(watchUrl), { signal: AbortSignal.timeout(10000) });
+        if (!resp.ok) continue;
+        const html = await resp.text();
+        const m = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+        if (!m) continue;
+        const player = JSON.parse(m[1]);
+        const formats = player?.streamingData?.formats || [];
+        if (formats.length === 0) continue;
+        // Prefer progressive (audio+video), fallback to first
+        const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
+        if (fmt?.url) return openDownload(fmt.url);
+      } catch (e) {
+        console.warn(`${LOG_PREFIX} proxy fallback:`, e.message);
+      }
+    }
+
+    // ── 4. Try video ID directly as internal YouTube format (rarely works but worth a shot) ──
+    try {
+      const ytUrl = `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`;
+      const resp = await fetch(ytUrl, { signal: AbortSignal.timeout(5000) });
+      if (resp.ok) {
+        const text = await resp.text();
+        const params = new URLSearchParams(text);
+        const playerResp = params.get('player_response');
+        if (playerResp) {
+          const player = JSON.parse(playerResp);
+          const formats = player?.streamingData?.formats || [];
+          const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
+          if (fmt?.url) return openDownload(fmt.url);
+        }
+      }
+    } catch (e) {
+      console.warn(`${LOG_PREFIX} get_video_info:`, e.message);
+    }
+
+    showToast(t('toastFail'));
+    btn.disabled = false;
+    btn.textContent = t('download');
+  }
+
+  // ── LOAD MORE ──
+  async function loadMore() {
+    if (isLoadingMore || !nextPageToken || isDemoMode) return;
+    isLoadingMore = true;
+    const btn = document.getElementById('loadMoreBtn');
+    btn.disabled = true;
+    btn.textContent = t('loadingMore');
+
+    try {
+      const searchUrl = new URL('https://www.googleapis.com/youtube/v3/search');
+      searchUrl.searchParams.set('part', 'snippet');
+      searchUrl.searchParams.set('q', currentQuery);
+      searchUrl.searchParams.set('type', 'video');
+      searchUrl.searchParams.set('videoDuration', 'short');
+      searchUrl.searchParams.set('videoLicense', 'creativeCommon');
+      searchUrl.searchParams.set('order', document.getElementById('sortSelect').value || currentSort);
+      searchUrl.searchParams.set('maxResults', '20');
+      searchUrl.searchParams.set('pageToken', nextPageToken);
+      searchUrl.searchParams.set('key', API_KEY);
+
+      const res = await fetch(searchUrl.toString());
+      if (!res.ok) throw new Error('Load more failed');
+      const data = await res.json();
+      const items = data.items || [];
+      nextPageToken = data.nextPageToken || '';
+
+      if (items.length === 0) {
+        btn.textContent = t('noMore');
+        btn.disabled = true;
+        isLoadingMore = false;
+        return;
+      }
+
+      const videoIds = items.map(item => item.id?.videoId).filter(Boolean);
+      let licenseMap = {};
+      if (videoIds.length > 0) {
+        try {
+          const videoUrl = new URL('https://www.googleapis.com/youtube/v3/videos');
+          videoUrl.searchParams.set('part', 'status');
+          videoUrl.searchParams.set('id', videoIds.join(','));
+          videoUrl.searchParams.set('key', API_KEY);
+          const videoRes = await fetch(videoUrl.toString());
+          if (videoRes.ok) {
+            const videoData = await videoRes.json();
+            (videoData.items || []).forEach(v => { licenseMap[v.id] = v.status?.license || 'unknown'; });
+          }
+        } catch (e) { console.warn('License check failed:', e.message); }
+      }
+
+      appendCards(items, licenseMap);
+    } catch (e) {
+      btn.textContent = t('loadMore');
+      showToast(e.message);
+    } finally {
+      isLoadingMore = false;
+      btn.disabled = false;
+    }
+  }
+
+  function appendCards(items, licenseMap) {
+    const grid = document.getElementById('grid');
+    totalLoaded += items.length;
+    const existingCount = document.querySelectorAll('.card').length;
+    document.getElementById('resultCount').innerHTML = t('resultCount', { n: existingCount + items.length });
+
+    grid.insertAdjacentHTML('beforeend', items.map((item, i) => {
+      const vid = item.id?.videoId || item.videoId;
+      const title = item.snippet?.title || item.title;
+      const channel = item.snippet?.channelTitle || item.channel;
+      const thumb = item.snippet?.thumbnails?.high?.url || item.thumb;
+      const views = item.views || '';
+      const date = item.snippet?.publishedAt
+        ? new Date(item.snippet.publishedAt).toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US')
+        : item.date || '';
+      const license = licenseMap[vid];
+      let licenseBadge = '';
+      if (license === 'creativeCommon') licenseBadge = `<div class="license-badge verified">\u2705${t('licenseOk')}</div>`;
+      else if (license && license !== 'unknown') licenseBadge = `<div class="license-badge warning">\u26A0\uFE0F${t('licenseWarn')}</div>`;
+
+      return `
+        <div class="card" style="animation-delay:${(existingCount + i) * 0.04}s">
+          <a href="https://www.youtube.com/shorts/${vid}" target="_blank" style="text-decoration:none;color:inherit">
+            <div class="thumb-wrap">
+              <img src="${thumb}" alt="${title}" loading="lazy" />
+              <div class="cc-icon">CC BY</div>
+              <div class="duration-badge">Shorts</div>
+              <div class="play-overlay">
+                <div class="play-icon">
+                  <svg width="18" height="22" viewBox="0 0 18 22" fill="none">
+                    <path d="M1 1L17 11L1 21V1Z" fill="#ff3b3b" stroke="#ff3b3b" stroke-width="1.5"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </a>
+          <div class="card-body">
+            <div class="card-title">${escHtml(title)}</div>
+            ${licenseBadge}
+            <div class="card-meta">
+              <span>\uD83D\uDCFA ${escHtml(channel)}</span>
+              ${views ? `<span>\uD83D\uDC41 ${views}</span>` : ''}
+              ${date ? `<span>\uD83D\uDCC5 ${date}</span>` : ''}
+            </div>
+            <div class="card-actions">
+              <a class="btn-watch" href="https://www.youtube.com/shorts/${vid}" target="_blank">${t('watch')}</a>
+              <button class="btn-download" onclick="downloadVideo(this, '${vid}', '${escAttr(title)}')">${t('download')}</button>
+            </div>
+          </div>
+        </div>`;
+    }).join(''));
+
+    const wrap = document.getElementById('loadMoreWrap');
+    if (nextPageToken) {
+      wrap.style.display = 'flex';
+      document.getElementById('loadMoreBtn').textContent = t('loadMore');
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    document.getElementById('toastMsg').textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3500);
+  }
+
+  // ── SKELETON ──
+  function showSkeleton() {
+    const grid = document.getElementById('grid');
+    document.getElementById('resultCount').innerHTML = '';
+    grid.innerHTML = Array(8).fill(`
+      <div class="skeleton">
+        <div class="skeleton-thumb"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line short"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── ERROR ──
+  function showError(msg) {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = `<div class="state-msg" style="grid-column:1/-1">
+      <div class="icon">\u26A0\uFE0F</div>
+      <h3>${t('errorTitle')}</h3>
+      <p>${escHtml(msg)}</p>
+      <p style="margin-top:8px;font-size:12px;">${t('errorHint')}</p>
+    </div>`;
+  }
+
+  // ── DEMO DATA ──
+  function loadDemo() {
+    isDemoMode = true;
+    const allDemos = [
+      { videoId:'dQw4w9WgXcQ', title:'Beautiful Nature Scenery (CC BY)', channel:'Nature Free', views:'1.2M', date:'2024-03-01', thumb:'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
+      { videoId:'9bZkp7q19f0', title:'Simple Pasta Recipe Shorts (CC BY)', channel:'Free Kitchen', views:'890K', date:'2024-02-15', thumb:'https://img.youtube.com/vi/9bZkp7q19f0/hqdefault.jpg' },
+      { videoId:'kJQP7kiw5Fk', title:'Cute Puppies Compilation (CC BY)', channel:'Animal Clips CC', views:'3.4M', date:'2024-01-20', thumb:'https://img.youtube.com/vi/kJQP7kiw5Fk/hqdefault.jpg' },
+      { videoId:'RgKAFK5djSk', title:'Travel Vlog Abroad (CC BY)', channel:'Travel Free', views:'560K', date:'2024-03-10', thumb:'https://img.youtube.com/vi/RgKAFK5djSk/hqdefault.jpg' },
+      { videoId:'OPf0YbXqDm0', title:'Dawn Forest ASMR (CC BY)', channel:'Nature ASMR', views:'2.1M', date:'2024-02-28', thumb:'https://img.youtube.com/vi/OPf0YbXqDm0/hqdefault.jpg' },
+      { videoId:'fJ9rUzIMcZQ', title:'Free Background Music (CC BY)', channel:'Free Music Hub', views:'740K', date:'2024-01-05', thumb:'https://img.youtube.com/vi/fJ9rUzIMcZQ/hqdefault.jpg' },
+      { videoId:'CevxZvSJLk8', title:'Beach Sunrise Timelapse (CC BY)', channel:'Timelapse CC', views:'1.8M', date:'2024-03-05', thumb:'https://img.youtube.com/vi/CevxZvSJLk8/hqdefault.jpg' },
+      { videoId:'hT_nvWreIhg', title:'Spring Flowers Compilation (CC BY)', channel:'Flower Films', views:'430K', date:'2024-02-10', thumb:'https://img.youtube.com/vi/hT_nvWreIhg/hqdefault.jpg' },
+      { videoId:'jNQXAC9IVRw', title:'Amazing Drone Footage (CC BY)', channel:'Drone World', views:'980K', date:'2024-04-01', thumb:'https://img.youtube.com/vi/jNQXAC9IVRw/hqdefault.jpg' },
+      { videoId:'xfrq0R12w6o', title:'Street Food Tour (CC BY)', channel:'Food Explorer', views:'2.3M', date:'2024-03-20', thumb:'https://img.youtube.com/vi/xfrq0R12w6o/hqdefault.jpg' },
+    ];
+
+    const shuffled = [...allDemos].sort(() => Math.random() - 0.5).slice(0, 8);
+
+    document.getElementById('resultCount').innerHTML = t('demoCount', { n: shuffled.length });
+
+    const items = shuffled.map(d => ({
+      id: { videoId: d.videoId },
+      videoId: d.videoId,
+      title: d.title,
+      channel: d.channel,
+      views: d.views,
+      date: d.date,
+      thumb: d.thumb,
+      snippet: {
+        title: d.title,
+        channelTitle: d.channel,
+        thumbnails: { high: { url: d.thumb } },
+        publishedAt: d.date,
+      }
+    }));
+
+    const demoLicenseMap = {};
+    shuffled.forEach(d => { demoLicenseMap[d.videoId] = 'creativeCommon'; });
+    renderCards(items, demoLicenseMap);
+  }
+
+  // ── UTILS ──
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function escAttr(s) {
+    return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;').substring(0, 50);
+  }
+</script>
+</body>
+</html>
