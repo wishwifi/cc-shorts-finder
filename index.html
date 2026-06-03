@@ -1116,99 +1116,11 @@
   }
 
   // ── DOWNLOAD via Piped / Invidious API ──
-  async function downloadVideo(btn, videoId, title) {
-    const LOG_PREFIX = `[DL ${videoId}]`;
-    btn.disabled = true;
-    btn.textContent = t('loading');
-
-    function openDownload(url) {
-      window.open(url, '_blank');
-      showToast(t('toastOk'));
-      btn.disabled = false;
-      btn.textContent = t('download');
-      return true;
-    }
-
-    function extractPlayerResponse(html) {
-      const idx = html.indexOf('ytInitialPlayerResponse');
-      if (idx === -1) return null;
-      const brace = html.indexOf('{', idx);
-      if (brace === -1) return null;
-      let depth = 0, jsonStr = '';
-      for (let i = brace; i < html.length; i++) {
-        const ch = html[i];
-        if (ch === '{') depth++;
-        else if (ch === '}') { depth--; if (depth === 0) { jsonStr = html.substring(brace, i + 1); break; } }
-      }
-      if (!jsonStr) return null;
-      try { return JSON.parse(jsonStr); } catch (_) { return null; }
-    }
-
-    function findStreamUrl(player) {
-      if (!player?.streamingData) return null;
-      for (const list of ['formats', 'adaptiveFormats']) {
-        const arr = player.streamingData[list] || [];
-        const f = arr.find(ff => ff.mimeType?.includes('mp4') && ff.url) || arr.find(ff => ff.url);
-        if (f?.url) return f.url;
-      }
-      return null;
-    }
-
-    // ── CORS proxies (try multiple services) ──
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const encUrl = encodeURIComponent(watchUrl);
-    const proxyList = [
-      { name: 'everyOrigin', url: `https://everyorigin.jwvbremen.nl/get?url=${encUrl}`, timeout: 25000, retry429: false },
-      { name: 'allorigins-raw', url: `https://api.allorigins.win/raw?url=${encUrl}`, timeout: 30000, retry429: false },
-      { name: 'allorigins-get', url: `https://api.allorigins.win/get?url=${encUrl}`, timeout: 30000, retry429: false },
-      { name: 'corsproxy', url: `https://corsproxy.io/?url=${encUrl}`, timeout: 30000, retry429: true },
-    ];
-    for (const p of proxyList) {
-      const maxAttempts = p.retry429 ? 3 : 1;
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          const wait = [5000, 20000][attempt - 1];
-          await new Promise(r => setTimeout(r, wait));
-        }
-        try {
-          const resp = await fetch(p.url, { signal: AbortSignal.timeout(p.timeout) });
-          if (resp.status === 429) { console.warn(`${LOG_PREFIX} ${p.name} 429`); continue; }
-          if (!resp.ok) { console.warn(`${LOG_PREFIX} ${p.name} HTTP ${resp.status}`); break; }
-          const text = await resp.text();
-          const html = p.name === 'everyOrigin' || p.name === 'allorigins-get'
-            ? (() => { try { return JSON.parse(text).contents } catch(_) { return text } })()
-            : text;
-          const player = extractPlayerResponse(html);
-          if (!player) { console.warn(`${LOG_PREFIX} ${p.name} no player`); break; }
-          const url = findStreamUrl(player);
-          if (url) return openDownload(url);
-        } catch (e) {
-          console.warn(`${LOG_PREFIX} ${p.name} attempt ${attempt+1}:`, e.message);
-        }
-      }
-    }
-
-    // ── fallback: get_video_info ──
-    try {
-      const resp = await fetch(
-        `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`,
-        { signal: AbortSignal.timeout(8000) }
-      );
-      if (resp.ok) {
-        const text = await resp.text();
-        const params = new URLSearchParams(text);
-        const playerResp = params.get('player_response');
-        if (playerResp) {
-          const player = JSON.parse(playerResp);
-          const url = findStreamUrl(player);
-          if (url) return openDownload(url);
-        }
-      }
-    } catch (e) {
-      console.warn(`${LOG_PREFIX} get_video_info:`, e.message);
-    }
-
-    showToast(t('toastFail'));
+  function downloadVideo(btn, videoId, title) {
+    const shortUrl = `https://www.youtube.com/shorts/${videoId}`;
+    const dest = `https://ko.savefrom.net/229au/#url=${encodeURIComponent(shortUrl)}`;
+    window.open(dest, '_blank');
+    showToast(t('toastOk'));
     btn.disabled = false;
     btn.textContent = t('download');
   }
