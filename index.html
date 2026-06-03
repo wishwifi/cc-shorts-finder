@@ -1117,31 +1117,6 @@
 
   // ── DOWNLOAD via Piped / Invidious API ──
   async function downloadVideo(btn, videoId, title) {
-    const pipedInstances = [
-      'pipedapi.kavin.rocks','api.piped.private.coffee','pipedapi-libre.kavin.rocks',
-      'pipedapi.tokhmi.xyz','pipedapi.moomoo.me','pipedapi.syncpundit.io',
-      'api-piped.mha.fi','pipedapi.rivo.lol','pipedapi.leptons.xyz',
-      'piped-api.lunar.icu','ytapi.dc09.ru','pipedapi.colinslegacy.com',
-      'yapi.vyper.me','api.looleh.xyz','piped-api.cfe.re','pipedapi.r4fo.com',
-      'pipedapi.nosebs.ru','pa.mint.lgbt','pa.il.ax','piped-api.privacy.com.de',
-      'api.piped.projectsegfau.lt','watchapi.whatever.social','api.piped.privacydev.net',
-      'pipedapi.palveluntarjoaja.eu','pipedapi.smnz.de','pipedapi.adminforge.de',
-      'pipedapi.qdi.fi','piped-api.hostux.net','pdapi.vern.cc','pipedapi.osphost.fi',
-      'pipedapi.simpleprivacy.fr','pipedapi.owo.si','api.piped.minionflo.net',
-      'pipedapi.nezumi.party','piped-api.coldforge.xyz','pipedapi.pfcd.me',
-    ];
-    const invidiousInstances = [
-      'invidious.snopyta.org','yewtu.be','invidious.nerdvpn.de','inv.nadeko.net',
-      'invidious.privacydev.net','vid.puffyan.us','invidious.private.coffee',
-      'invidious.044075.xyz','iv.melmac.space','inv.odyssey346.dev',
-      'inv.bp.projectsegfau.lt','invidious.projectsegfau.lt',
-      'inv.tux.pizza','yt.artemislena.eu','invidious.pcriot.xyz',
-    ];
-    const proxyUrls = [
-      (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-      (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-      (url) => `https://codetabs.com/cors-proxy/cors-proxy.php?url=${encodeURIComponent(url)}`,
-    ];
     const LOG_PREFIX = `[DL ${videoId}]`;
     btn.disabled = true;
     btn.textContent = t('loading');
@@ -1154,62 +1129,70 @@
       return true;
     }
 
-    // ── 1. Try Piped instances ──
-    for (const host of pipedInstances) {
+    async function tryProxy(proxyUrl, label, timeoutMs) {
       try {
-        const url = `https://${host}/streams/${videoId}`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const streams = data.videoStreams || [];
-        const best = streams.find(s => !s.videoOnly) || streams[0];
-        if (best?.url) return openDownload(best.url);
-        // Some piped instances use 'url' directly (older versions)
-        if (data.url) return openDownload(data.url);
-      } catch (e) {
-        console.warn(`${LOG_PREFIX} piped ${host}:`, e.message);
-      }
-    }
-
-    // ── 2. Try Invidious instances ──
-    for (const host of invidiousInstances) {
-      try {
-        const url = `https://${host}/api/v1/videos/${videoId}`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-        if (!res.ok) continue;
-        const data = await res.json();
-        const streams = data.formatStreams || [];
-        const best = streams.find(s => s.type && s.type.includes('mp4') && !s.encoding) || streams.find(s => s.type && s.type.includes('mp4')) || streams[0];
-        if (best?.url) return openDownload(best.url);
-      } catch (e) {
-        console.warn(`${LOG_PREFIX} invidious ${host}:`, e.message);
-      }
-    }
-
-    // ── 3. Try proxy + YouTube watch page ──
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    for (const makeProxyUrl of proxyUrls) {
-      try {
-        const resp = await fetch(makeProxyUrl(watchUrl), { signal: AbortSignal.timeout(10000) });
-        if (!resp.ok) continue;
+        const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(timeoutMs) });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const html = await resp.text();
         const m = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-        if (!m) continue;
+        if (!m) throw new Error('no ytInitialPlayerResponse');
         const player = JSON.parse(m[1]);
         const formats = player?.streamingData?.formats || [];
-        if (formats.length === 0) continue;
-        // Prefer progressive (audio+video), fallback to first
         const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
-        if (fmt?.url) return openDownload(fmt.url);
+        if (fmt?.url) return fmt.url;
+        const adaptive = player?.streamingData?.adaptiveFormats || [];
+        const v = adaptive.find(f => f.mimeType?.includes('mp4') && f.height <= 720) || adaptive.find(f => f.mimeType?.includes('mp4'));
+        if (v?.url) return v.url;
+        throw new Error('no stream url');
       } catch (e) {
-        console.warn(`${LOG_PREFIX} proxy fallback:`, e.message);
+        console.warn(`${LOG_PREFIX} ${label}:`, e.message);
+        return null;
       }
     }
 
-    // ── 4. Try video ID directly as internal YouTube format (rarely works but worth a shot) ──
+    // ── 1. Try CORS proxies against YouTube watch page (parallel) ──
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const proxyTasks = [
+      tryProxy(`https://api.allorigins.win/raw?url=${encodeURIComponent(watchUrl)}`, 'allorigins', 30000),
+      tryProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(watchUrl)}`, 'allorigins-get', 30000),
+      new Promise(r => setTimeout(r, 1500)).then(() =>
+        tryProxy(`https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`, 'corsproxy', 25000)
+      ),
+    ];
+    const proxyResults = await Promise.all(proxyTasks);
+    const proxyHit = proxyResults.find(u => u !== null);
+    if (proxyHit) return openDownload(proxyHit);
+
+    // ── 2. Try YouTube InnerTube API directly (CORS may be permissive) ──
+    try {
+      const innerTubeKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+      const body = JSON.stringify({
+        context: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00' } },
+        videoId: videoId,
+      });
+      const resp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${innerTubeKey}`, {
+        method: 'POST',
+        body: body,
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15000),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const formats = data?.streamingData?.formats || [];
+        const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
+        if (fmt?.url) return openDownload(fmt.url);
+        const adaptive = data?.streamingData?.adaptiveFormats || [];
+        const v = adaptive.find(f => f.mimeType?.includes('mp4') && f.height <= 720) || adaptive.find(f => f.mimeType?.includes('mp4'));
+        if (v?.url) return openDownload(v.url);
+      }
+    } catch (e) {
+      console.warn(`${LOG_PREFIX} innertube:`, e.message);
+    }
+
+    // ── 3. Try get_video_info direct ──
     try {
       const ytUrl = `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`;
-      const resp = await fetch(ytUrl, { signal: AbortSignal.timeout(5000) });
+      const resp = await fetch(ytUrl, { signal: AbortSignal.timeout(8000) });
       if (resp.ok) {
         const text = await resp.text();
         const params = new URLSearchParams(text);
