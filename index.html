@@ -1129,67 +1129,51 @@
       return true;
     }
 
-    async function tryProxy(proxyUrl, label, timeoutMs) {
+    // ── 1. Invidious JSONP (bypasses CORS via <script> tag) ──
+    const invidiousHosts = [
+      'invidious.snopyta.org','yewtu.be','invidious.nerdvpn.de',
+      'inv.nadeko.net','invidious.privacydev.net','vid.puffyan.us',
+      'invidious.private.coffee','iv.melmac.space','inv.odyssey346.dev',
+      'yt.artemislena.eu', 'inv.tux.pizza', 'invidious.pcriot.xyz',
+    ];
+    for (const host of invidiousHosts) {
       try {
-        const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(timeoutMs) });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await new Promise((resolve, reject) => {
+          const cb = '__iv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+          const script = document.createElement('script');
+          const timer = setTimeout(() => { script.remove(); delete window[cb]; reject('timeout'); }, 8000);
+          window[cb] = (d) => { clearTimeout(timer); script.remove(); delete window[cb]; resolve(d); };
+          script.src = `https://${host}/api/v1/videos/${videoId}?callback=${cb}`;
+          script.onerror = () => { clearTimeout(timer); script.remove(); delete window[cb]; reject('error'); };
+          document.head.appendChild(script);
+        });
+        const streams = data.formatStreams || [];
+        const best = streams.find(s => s.type?.includes('mp4') && !s.encoding) || streams.find(s => s.type?.includes('mp4')) || streams[0];
+        if (best?.url) return openDownload(best.url);
+      } catch (e) {
+        console.warn(`${LOG_PREFIX} invidious ${host}:`, e);
+      }
+    }
+
+    // ── 2. corsproxy.io with backoff ──
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+      try {
+        const resp = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`, { signal: AbortSignal.timeout(25000) });
+        if (!resp.ok) { console.warn(`${LOG_PREFIX} corsproxy HTTP ${resp.status}`); continue; }
         const html = await resp.text();
         const m = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-        if (!m) throw new Error('no ytInitialPlayerResponse');
+        if (!m) continue;
         const player = JSON.parse(m[1]);
-        const formats = player?.streamingData?.formats || [];
-        const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
-        if (fmt?.url) return fmt.url;
-        const adaptive = player?.streamingData?.adaptiveFormats || [];
-        const v = adaptive.find(f => f.mimeType?.includes('mp4') && f.height <= 720) || adaptive.find(f => f.mimeType?.includes('mp4'));
-        if (v?.url) return v.url;
-        throw new Error('no stream url');
-      } catch (e) {
-        console.warn(`${LOG_PREFIX} ${label}:`, e.message);
-        return null;
-      }
-    }
-
-    // ── 1. Try CORS proxies against YouTube watch page (parallel) ──
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const proxyTasks = [
-      tryProxy(`https://api.allorigins.win/raw?url=${encodeURIComponent(watchUrl)}`, 'allorigins', 30000),
-      tryProxy(`https://api.allorigins.win/get?url=${encodeURIComponent(watchUrl)}`, 'allorigins-get', 30000),
-      new Promise(r => setTimeout(r, 1500)).then(() =>
-        tryProxy(`https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`, 'corsproxy', 25000)
-      ),
-    ];
-    const proxyResults = await Promise.all(proxyTasks);
-    const proxyHit = proxyResults.find(u => u !== null);
-    if (proxyHit) return openDownload(proxyHit);
-
-    // ── 2. Try YouTube InnerTube API directly (CORS may be permissive) ──
-    try {
-      const innerTubeKey = 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
-      const body = JSON.stringify({
-        context: { client: { clientName: 'WEB', clientVersion: '2.20240101.00.00' } },
-        videoId: videoId,
-      });
-      const resp = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${innerTubeKey}`, {
-        method: 'POST',
-        body: body,
-        headers: { 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        const formats = data?.streamingData?.formats || [];
-        const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
+        const fmt = (player?.streamingData?.formats || []).find(f => f.mimeType?.includes('mp4')) || (player?.streamingData?.formats || [])[0];
         if (fmt?.url) return openDownload(fmt.url);
-        const adaptive = data?.streamingData?.adaptiveFormats || [];
-        const v = adaptive.find(f => f.mimeType?.includes('mp4') && f.height <= 720) || adaptive.find(f => f.mimeType?.includes('mp4'));
-        if (v?.url) return openDownload(v.url);
+      } catch (e) {
+        console.warn(`${LOG_PREFIX} corsproxy:`, e.message);
       }
-    } catch (e) {
-      console.warn(`${LOG_PREFIX} innertube:`, e.message);
     }
 
-    // ── 3. Try get_video_info direct ──
+    // ── 3. try get_video_info direct ──
     try {
       const ytUrl = `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`;
       const resp = await fetch(ytUrl, { signal: AbortSignal.timeout(8000) });
@@ -1199,8 +1183,7 @@
         const playerResp = params.get('player_response');
         if (playerResp) {
           const player = JSON.parse(playerResp);
-          const formats = player?.streamingData?.formats || [];
-          const fmt = formats.find(f => f.mimeType?.includes('mp4')) || formats[0];
+          const fmt = (player?.streamingData?.formats || []).find(f => f.mimeType?.includes('mp4')) || (player?.streamingData?.formats || [])[0];
           if (fmt?.url) return openDownload(fmt.url);
         }
       }
