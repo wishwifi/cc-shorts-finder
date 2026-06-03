@@ -1154,25 +1154,37 @@
       return null;
     }
 
-    // ── corsproxy.io (supports GitHub.io origin) ──
+    // ── CORS proxies (try multiple services) ──
     const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const delays = [1000, 5000, 15000];
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      if (attempt > 0) await new Promise(r => setTimeout(r, delays[attempt]));
-      try {
-        const resp = await fetch(
-          `https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`,
-          { signal: AbortSignal.timeout(30000) }
-        );
-        if (resp.status === 429) { console.warn(`${LOG_PREFIX} corsproxy 429 (attempt ${attempt+1})`); continue; }
-        if (!resp.ok) { console.warn(`${LOG_PREFIX} corsproxy HTTP ${resp.status}`); break; }
-        const html = await resp.text();
-        const player = extractPlayerResponse(html);
-        if (!player) { console.warn(`${LOG_PREFIX} corsproxy no player response`); break; }
-        const url = findStreamUrl(player);
-        if (url) return openDownload(url);
-      } catch (e) {
-        console.warn(`${LOG_PREFIX} corsproxy attempt ${attempt+1}:`, e.message);
+    const encUrl = encodeURIComponent(watchUrl);
+    const proxyList = [
+      { name: 'everyOrigin', url: `https://everyorigin.jwvbremen.nl/get?url=${encUrl}`, timeout: 25000, retry429: false },
+      { name: 'allorigins-raw', url: `https://api.allorigins.win/raw?url=${encUrl}`, timeout: 30000, retry429: false },
+      { name: 'allorigins-get', url: `https://api.allorigins.win/get?url=${encUrl}`, timeout: 30000, retry429: false },
+      { name: 'corsproxy', url: `https://corsproxy.io/?url=${encUrl}`, timeout: 30000, retry429: true },
+    ];
+    for (const p of proxyList) {
+      const maxAttempts = p.retry429 ? 3 : 1;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        if (attempt > 0) {
+          const wait = [5000, 20000][attempt - 1];
+          await new Promise(r => setTimeout(r, wait));
+        }
+        try {
+          const resp = await fetch(p.url, { signal: AbortSignal.timeout(p.timeout) });
+          if (resp.status === 429) { console.warn(`${LOG_PREFIX} ${p.name} 429`); continue; }
+          if (!resp.ok) { console.warn(`${LOG_PREFIX} ${p.name} HTTP ${resp.status}`); break; }
+          const text = await resp.text();
+          const html = p.name === 'everyOrigin' || p.name === 'allorigins-get'
+            ? (() => { try { return JSON.parse(text).contents } catch(_) { return text } })()
+            : text;
+          const player = extractPlayerResponse(html);
+          if (!player) { console.warn(`${LOG_PREFIX} ${p.name} no player`); break; }
+          const url = findStreamUrl(player);
+          if (url) return openDownload(url);
+        } catch (e) {
+          console.warn(`${LOG_PREFIX} ${p.name} attempt ${attempt+1}:`, e.message);
+        }
       }
     }
 
