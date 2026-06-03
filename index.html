@@ -1129,62 +1129,67 @@
       return true;
     }
 
-    // ── 1. Invidious JSONP (bypasses CORS via <script> tag) ──
-    const invidiousHosts = [
-      'invidious.snopyta.org','yewtu.be','invidious.nerdvpn.de',
-      'inv.nadeko.net','invidious.privacydev.net','vid.puffyan.us',
-      'invidious.private.coffee','iv.melmac.space','inv.odyssey346.dev',
-      'yt.artemislena.eu', 'inv.tux.pizza', 'invidious.pcriot.xyz',
-    ];
-    for (const host of invidiousHosts) {
-      try {
-        const data = await new Promise((resolve, reject) => {
-          const cb = '__iv_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-          const script = document.createElement('script');
-          const timer = setTimeout(() => { script.remove(); delete window[cb]; reject('timeout'); }, 8000);
-          window[cb] = (d) => { clearTimeout(timer); script.remove(); delete window[cb]; resolve(d); };
-          script.src = `https://${host}/api/v1/videos/${videoId}?callback=${cb}`;
-          script.onerror = () => { clearTimeout(timer); script.remove(); delete window[cb]; reject('error'); };
-          document.head.appendChild(script);
-        });
-        const streams = data.formatStreams || [];
-        const best = streams.find(s => s.type?.includes('mp4') && !s.encoding) || streams.find(s => s.type?.includes('mp4')) || streams[0];
-        if (best?.url) return openDownload(best.url);
-      } catch (e) {
-        console.warn(`${LOG_PREFIX} invidious ${host}:`, e);
+    function extractPlayerResponse(html) {
+      const idx = html.indexOf('ytInitialPlayerResponse');
+      if (idx === -1) return null;
+      const brace = html.indexOf('{', idx);
+      if (brace === -1) return null;
+      let depth = 0, jsonStr = '';
+      for (let i = brace; i < html.length; i++) {
+        const ch = html[i];
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { jsonStr = html.substring(brace, i + 1); break; } }
       }
+      if (!jsonStr) return null;
+      try { return JSON.parse(jsonStr); } catch (_) { return null; }
     }
 
-    // ── 2. corsproxy.io with backoff ──
+    function findStreamUrl(player) {
+      if (!player?.streamingData) return null;
+      for (const list of ['formats', 'adaptiveFormats']) {
+        const arr = player.streamingData[list] || [];
+        const f = arr.find(ff => ff.mimeType?.includes('mp4') && ff.url) || arr.find(ff => ff.url);
+        if (f?.url) return f.url;
+      }
+      return null;
+    }
+
+    // ── corsproxy.io (supports GitHub.io origin) ──
     const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+    const delays = [1000, 5000, 15000];
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, delays[attempt]));
       try {
-        const resp = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`, { signal: AbortSignal.timeout(25000) });
-        if (!resp.ok) { console.warn(`${LOG_PREFIX} corsproxy HTTP ${resp.status}`); continue; }
+        const resp = await fetch(
+          `https://corsproxy.io/?url=${encodeURIComponent(watchUrl)}`,
+          { signal: AbortSignal.timeout(30000) }
+        );
+        if (resp.status === 429) { console.warn(`${LOG_PREFIX} corsproxy 429 (attempt ${attempt+1})`); continue; }
+        if (!resp.ok) { console.warn(`${LOG_PREFIX} corsproxy HTTP ${resp.status}`); break; }
         const html = await resp.text();
-        const m = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
-        if (!m) continue;
-        const player = JSON.parse(m[1]);
-        const fmt = (player?.streamingData?.formats || []).find(f => f.mimeType?.includes('mp4')) || (player?.streamingData?.formats || [])[0];
-        if (fmt?.url) return openDownload(fmt.url);
+        const player = extractPlayerResponse(html);
+        if (!player) { console.warn(`${LOG_PREFIX} corsproxy no player response`); break; }
+        const url = findStreamUrl(player);
+        if (url) return openDownload(url);
       } catch (e) {
-        console.warn(`${LOG_PREFIX} corsproxy:`, e.message);
+        console.warn(`${LOG_PREFIX} corsproxy attempt ${attempt+1}:`, e.message);
       }
     }
 
-    // ── 3. try get_video_info direct ──
+    // ── fallback: get_video_info ──
     try {
-      const ytUrl = `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`;
-      const resp = await fetch(ytUrl, { signal: AbortSignal.timeout(8000) });
+      const resp = await fetch(
+        `https://www.youtube.com/get_video_info?video_id=${videoId}&el=embedded&hl=en`,
+        { signal: AbortSignal.timeout(8000) }
+      );
       if (resp.ok) {
         const text = await resp.text();
         const params = new URLSearchParams(text);
         const playerResp = params.get('player_response');
         if (playerResp) {
           const player = JSON.parse(playerResp);
-          const fmt = (player?.streamingData?.formats || []).find(f => f.mimeType?.includes('mp4')) || (player?.streamingData?.formats || [])[0];
-          if (fmt?.url) return openDownload(fmt.url);
+          const url = findStreamUrl(player);
+          if (url) return openDownload(url);
         }
       }
     } catch (e) {
